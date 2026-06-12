@@ -38,14 +38,9 @@ const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, ANON_KEY);
 
-// Wenn schon eingeloggt â†’ direkt weiter
-db.auth.getSession().then(({ data }) => {
-  if (data.session) checkAndRedirect(data.session.user.email);
-});
-
-// OAuth Callback abfangen
+// OAuth Callback abfangen (Token in URL nach Google-Redirect)
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session) {
+  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
     checkAndRedirect(session.user.email);
   }
 });
@@ -53,7 +48,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 async function loginWithGoogle() {
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo: 'https://stschaab.github.io/health-db/health-login.html' }
   });
   if (error) showError(error.message);
 }
