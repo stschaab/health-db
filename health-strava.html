@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Strava Import</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+  header { background: #1a1a2e; color: white; padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 1.4rem; font-weight: 600; }
+  nav a { color: #7ec8e3; font-size: 0.85rem; text-decoration: none; margin-left: 20px; }
+  nav a:hover { text-decoration: underline; }
+  .logout-btn { color: #7ec8e3; font-size: 0.85rem; background: none; border: none; cursor: pointer; margin-left: 20px; padding: 0; }
+  .logout-btn:hover { text-decoration: underline; }
+  .container { max-width: 640px; margin: 40px auto; padding: 0 24px; }
+  .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; }
+  .card h2 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 20px; }
+  .strava-logo { color: #fc4c02; font-weight: 800; font-size: 1.1rem; }
+  .btn { display: inline-block; padding: 11px 22px; border-radius: 8px; border: none; font-size: 0.95rem; cursor: pointer; text-decoration: none; margin-right: 10px; margin-bottom: 10px; font-family: inherit; }
+  .btn-strava { background: #fc4c02; color: white; }
+  .btn-strava:hover { background: #e04402; }
+  .btn-import { background: #1a1a2e; color: white; }
+  .btn-import:hover { background: #2d2d4e; }
+  .btn-sync { background: #2e7d32; color: white; }
+  .btn-sync:hover { background: #1b5e20; }
+  .btn-secondary { background: #f0f0f0; color: #333; }
+  .btn-secondary:hover { background: #e0e0e0; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 14px 18px; border-radius: 8px; font-size: 0.9rem; }
+  .status-row.connected { background: #e8f5e9; color: #2e7d32; }
+  .status-row.disconnected { background: #fff3e0; color: #e65100; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .progress { margin-top: 16px; background: #eee; border-radius: 20px; height: 6px; overflow: hidden; display: none; }
+  .progress-bar { height: 100%; background: #fc4c02; width: 0%; transition: width 0.4s; }
+  .stats { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; display: none; }
+  .stat { background: #f8f8f8; border-radius: 8px; padding: 12px 16px; text-align: center; flex: 1; min-width: 100px; }
+  .stat .n { font-size: 1.5rem; font-weight: 700; color: #fc4c02; }
+  .stat .l { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+  .log { margin-top: 20px; background: #f8f8f8; border-radius: 8px; padding: 14px 16px; font-size: 0.8rem; font-family: monospace; max-height: 280px; overflow-y: auto; line-height: 1.7; display: none; }
+  .log .ok   { color: #2e7d32; }
+  .log .err  { color: #c62828; }
+  .log .info { color: #777; }
+  .last-import { font-size: 0.8rem; color: #aaa; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Strava Import</h1>
+  <nav>
+    <a href="health-dashboard.html">Dashboard</a>
+    <a href="health-parameters.html">Parameter</a>
+    <a href="health-trend.html">Trend</a>
+    <a href="health-users.html">Users</a>
+    <a href="health-strava.html">Strava</a>
+    <button class="logout-btn" onclick="logout()">Abmelden</button>
+  </nav>
+</header>
+<div class="container">
+  <div class="card">
+    <h2><span class="strava-logo">STRAVA</span> &nbsp;Verbindung</h2>
+    <div id="statusRow" class="status-row disconnected"><div class="dot"></div><span id="statusText">Nicht verbunden</span></div>
+    <div id="btnConnect"><button class="btn btn-strava" onclick="authorize()">Mit Strava verbinden</button></div>
+    <div id="btnImport" style="display:none">
+      <button class="btn btn-sync" id="syncBtn" onclick="startImport(false)">Neue Aktivitäten holen</button>
+      <button class="btn btn-import" id="fullBtn" onclick="startImport(true)">Alles neu importieren</button>
+      <button class="btn btn-secondary" onclick="authorize()">Neu autorisieren</button>
+      <div class="last-import" id="lastImport"></div>
+    </div>
+  </div>
+  <div class="card" id="importCard" style="display:none">
+    <h2>Import Status</h2>
+    <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Gesamt</div></div>
+      <div class="stat"><div class="n" id="statNew">0</div><div class="l">Neu</div></div>
+      <div class="stat"><div class="n" id="statPages">0</div><div class="l">Seiten</div></div>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+<script>
+const SUPABASE_URL = 'https://thgawuqcogugzurrijkp.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZ2F3dXFjb2d1Z3p1cnJpamtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTI1MTIsImV4cCI6MjA5NjM4ODUxMn0.IK7vJwPdmZ7OFCMq1QfI5wTM4B6IBw-04AJoJun-s8w';
+const STRAVA_CLIENT_ID = '257620';
+const STRAVA_CLIENT_SECRET = '528ca7f464ccbd8aee4b1fc3eee777e243ec4beb';
+const REDIRECT_URI = 'https://stschaab.github.io/health-db/health-strava.html';
+const db = supabase.createClient(SUPABASE_URL, ANON_KEY);
+let accessToken = null;
+db.auth.getSession().then(({ data }) => { if (!data.session) window.location.href = 'health-login.html'; });
+async function logout() { await db.auth.signOut(); window.location.href = 'health-login.html'; }
+function addLog(msg, cls = 'info') { const d = document.getElementById('log'); d.style.display='block'; d.innerHTML += '<div class="'+cls+'">'+msg+'</div>'; d.scrollTop=d.scrollHeight; }
+function setConnected(name) {
+  document.getElementById('statusRow').className = 'status-row connected';
+  document.getElementById('statusText').textContent = 'Verbunden als ' + name;
+  document.getElementById('btnConnect').style.display = 'none';
+  document.getElementById('btnImport').style.display = 'block';
+  const last = localStorage.getItem('strava_last_import');
+  if (last) document.getElementById('lastImport').textContent = 'Letzter Import: ' + new Date(last).toLocaleString('de-DE');
+}
+function authorize() {
+  window.location.href = 'https://www.strava.com/oauth/authorize?client_id='+STRAVA_CLIENT_ID+'&redirect_uri='+encodeURIComponent(REDIRECT_URI)+'&response_type=code&scope=activity:read_all';
+}
+async function exchangeCode(code) {
+  addLog('Autorisiere...');
+  const r = await fetch('https://www.strava.com/oauth/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({client_id:STRAVA_CLIENT_ID,client_secret:STRAVA_CLIENT_SECRET,code,grant_type:'authorization_code'}) });
+  const d = await r.json();
+  if (d.access_token) {
+    accessToken = d.access_token;
+    localStorage.setItem('strava_access_token', accessToken);
+    localStorage.setItem('strava_refresh_token', d.refresh_token);
+    localStorage.setItem('strava_athlete', d.athlete?.firstname+' '+d.athlete?.lastname);
+    addLog('Verbunden als '+d.athlete?.firstname+' '+d.athlete?.lastname, 'ok');
+    setConnected(d.athlete?.firstname+' '+d.athlete?.lastname);
+  } else { addLog('Fehler: '+JSON.stringify(d), 'err'); }
+}
+async function ensureFreshToken() {
+  const rt = localStorage.getItem('strava_refresh_token');
+  if (!rt) return;
+  const r = await fetch('https://www.strava.com/oauth/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({client_id:STRAVA_CLIENT_ID,client_secret:STRAVA_CLIENT_SECRET,refresh_token:rt,grant_type:'refresh_token'}) });
+  const d = await r.json();
+  if (d.access_token) { accessToken=d.access_token; localStorage.setItem('strava_access_token',accessToken); localStorage.setItem('strava_refresh_token',d.refresh_token); }
+}
+async function fetchPage(page, after) {
+  let url = 'https://www.strava.com/api/v3/athlete/activities?per_page=100&page='+page;
+  if (after) url += '&after='+after;
+  const r = await fetch(url, { headers:{'Authorization':'Bearer '+accessToken} });
+  if (r.status===401) { await ensureFreshToken(); return fetchPage(page, after); }
+  return r.json();
+}
+async function startImport(fullImport) {
+  document.getElementById('syncBtn').disabled=true; document.getElementById('fullBtn').disabled=true;
+  document.getElementById('importCard').style.display='block';
+  document.getElementById('progress').style.display='block';
+  document.getElementById('stats').style.display='flex';
+  document.getElementById('log').innerHTML='';
+  let after = null;
+  if (!fullImport) {
+    const { data } = await db.from('activities').select('date').order('date',{ascending:false}).limit(1);
+    if (data?.[0]?.date) { after=Math.floor(new Date(data[0].date).getTime()/1000); addLog('Sync ab: '+data[0].date); }
+  }
+  addLog(fullImport ? 'Vollständiger Import...' : 'Sync neuer Aktivitäten...');
+  let page=1, all=[], pages=0;
+  while(true) {
+    const acts = await fetchPage(page, after);
+    if (!Array.isArray(acts)||acts.length===0) break;
+    all=all.concat(acts); pages++;
+    document.getElementById('statPages').textContent=pages;
+    addLog('Seite '+page+': '+acts.length+' Aktivitäten (gesamt: '+all.length+')');
+    if (acts.length<100) break; page++;
+  }
+  if (all.length===0) { addLog('Keine neuen Aktivitäten.','ok'); document.getElementById('syncBtn').disabled=false; document.getElementById('fullBtn').disabled=false; return; }
+  addLog(all.length+' Aktivitäten — schreibe in Supabase...','ok');
+  const rows = all.map(a=>({ strava_id:a.id, type:a.sport_type||a.type, name:a.name, date:a.start_date_local?.substring(0,10), duration_sec:a.moving_time, distance_m:a.distance, elevation_m:a.total_elevation_gain, avg_heartrate:a.average_heartrate?Math.round(a.average_heartrate):null, max_heartrate:a.max_heartrate?Math.round(a.max_heartrate):null, calories:a.calories||null }));
+  let total=0;
+  for (let i=0;i<rows.length;i+=500) {
+    const batch=rows.slice(i,i+500);
+    const {error}=await db.from('activities').upsert(batch,{onConflict:'strava_id'});
+    if (error) addLog('Fehler: '+error.message,'err'); else { total+=batch.length; addLog('Batch '+(Math.floor(i/500)+1)+': '+batch.length+' Zeilen ✓','ok'); }
+    document.getElementById('statTotal').textContent=total;
+    document.getElementById('statNew').textContent=total;
+    document.getElementById('progressBar').style.width=Math.round((i+batch.length)/rows.length*100)+'%';
+  }
+  const now=new Date().toISOString(); localStorage.setItem('strava_last_import',now);
+  document.getElementById('lastImport').textContent='Letzter Import: '+new Date(now).toLocaleString('de-DE');
+  addLog('Fertig! '+total+' Aktivitäten gespeichert.','ok');
+  document.getElementById('syncBtn').disabled=false; document.getElementById('fullBtn').disabled=false;
+}
+const params=new URLSearchParams(window.location.search);
+const code=params.get('code');
+if (code) { window.history.replaceState({},'',window.location.pathname); document.getElementById('importCard').style.display='block'; exchangeCode(code); }
+else { const s=localStorage.getItem('strava_access_token'); if(s){accessToken=s;setConnected(localStorage.getItem('strava_athlete')||'Strava');} }
+</script>
+</body>
+</html>
