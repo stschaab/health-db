@@ -51,7 +51,7 @@
   <div class="selector">
     <label>Parameter</label>
     <select id="paramSelect" onchange="loadTrend()">
-      <option value="">â€” bitte wÃ¤hlen â€”</option>
+      <option value="">— bitte wählen —</option>
     </select>
   </div>
 
@@ -60,7 +60,7 @@
   <div class="chart-card">
     <div class="chart-wrap">
       <canvas id="chart"></canvas>
-      <div class="empty" id="empty">Parameter auswÃ¤hlen um den Verlauf zu sehen</div>
+      <div class="empty" id="empty">Parameter auswählen um den Verlauf zu sehen</div>
     </div>
     <div class="ref-info" id="refInfo"></div>
   </div>
@@ -136,7 +136,7 @@ function statusClass(val, low, high) {
   return 'ok';
 }
 function statusLabel(cls) {
-  return { ok: 'Im Bereich', high: 'Zu hoch', low: 'Zu niedrig', na: 'â€”' }[cls];
+  return { ok: 'Im Bereich', high: 'Zu hoch', low: 'Zu niedrig', na: '—' }[cls];
 }
 
 function renderInfo(param, rows) {
@@ -151,20 +151,20 @@ function renderInfo(param, rows) {
         if (val === null || prev === null) return '';
         const diff = val - prev;
         const pct = Math.abs(diff / prev * 100).toFixed(1);
-        return diff > 0 ? `â–² +${pct}%` : `â–¼ âˆ’${pct}%`;
+        return diff > 0 ? `▲ +${pct}%` : `▼ −${pct}%`;
       })()
-    : 'â€”';
+    : '—';
 
   const rangeText = param.ref_range_low !== null || param.ref_range_high !== null
-    ? `${param.ref_range_low ?? '?'} â€“ ${param.ref_range_high ?? '?'} ${param.unit || ''}`
+    ? `${param.ref_range_low ?? '?'} – ${param.ref_range_high ?? '?'} ${param.unit || ''}`
     : 'kein Bereich';
 
   document.getElementById('infoRow').style.display = 'flex';
   document.getElementById('infoRow').innerHTML = `
     <div class="info-card">
       <div class="label">Letzter Wert</div>
-      <div class="val">${val ?? latest.value_text ?? 'â€”'} <small style="font-size:0.9rem;color:#aaa">${param.unit || ''}</small></div>
-      <div class="sub">${date}${latest.lab ? ' Â· ' + latest.lab : ''}</div>
+      <div class="val">${val ?? latest.value_text ?? '—'} <small style="font-size:0.9rem;color:#aaa">${param.unit || ''}</small></div>
+      <div class="sub">${date}${latest.lab ? ' · ' + latest.lab : ''}</div>
     </div>
     <div class="info-card">
       <div class="label">Status</div>
@@ -204,9 +204,9 @@ function renderChart(param, rows) {
     data: {
       labels,
       datasets: [
-        // Referenzbereich oben (FlÃ¤che zwischen high und Chart-Max)
+        // Referenzbereich oben (Fläche zwischen high und Chart-Max)
         ...(high !== null ? [{
-          label: 'Ãœber Bereich',
+          label: 'Über Bereich',
           data: labels.map(() => high),
           fill: { target: { value: yMax }, above: 'rgba(255,152,0,0.08)', below: 'transparent' },
           borderColor: 'rgba(255,152,0,0.5)',
