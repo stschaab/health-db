@@ -90,7 +90,7 @@ async function loadData() {
   try {
     // Alle Messungen mit Parameter-Info
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/measurements?select=measured_at,value,value_text,lab,notes,parameters(id,name,category,unit,ref_range_low,ref_range_high)&order=measured_at.desc`,
+      `${SUPABASE_URL}/rest/v1/measurements?select=measured_at,value,value_text,unit,value_si,lab,notes,parameters(id,name,category,unit,unit_si,ref_range_low,ref_range_high,ref_range_low_si,ref_range_high_si)&order=measured_at.desc`,
       { headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } }
     );
     const data = await resp.json();
@@ -133,14 +133,19 @@ function render(data) {
     for (const { name, row } of byCategory[cat]) {
       const p = row.parameters;
       const val = row.value;
+      const valSi = row.value_si;
       const display = row.value_text || (val !== null ? val : '—');
-      const [cls, label] = statusLabel(val, p.ref_range_low, p.ref_range_high);
+      const displaySi = valSi !== null && valSi !== undefined ? valSi : '—';
+      const unitOrig = row.unit || p.unit || '';
+      const unitSi = p.unit_si || '';
+      const [cls, label] = statusLabel(valSi ?? val, p.ref_range_low_si ?? p.ref_range_low, p.ref_range_high_si ?? p.ref_range_high);
       const date = new Date(row.measured_at).toLocaleDateString('de-DE', { day:'2-digit', month:'short', year:'numeric' });
       const lab = row.lab ? ` · ${row.lab}` : '';
       html += `
         <div class="card" onclick="window.location='health-trend.html?param=${p.id}'" style="cursor:pointer" title="Trend anzeigen">
           <div class="param">${name}</div>
-          <div><span class="value">${display}</span><span class="unit">${p.unit || ''}</span></div>
+          <div><span class="value">${displaySi || display}</span><span class="unit">${unitSi || unitOrig}</span></div>
+          ${unitSi && unitSi !== unitOrig ? `<div style="font-size:0.75rem;color:#bbb">${display} ${unitOrig}</div>` : ''}
           <div class="date">${date}${lab}</div>
           <span class="range ${cls}">${label}</span>
         </div>`;
@@ -151,20 +156,26 @@ function render(data) {
   // Alle Messungen Tabelle
   html += `<div class="section-title" style="margin-top:40px">Alle Messungen</div>
   <table>
-    <thead><tr><th>Parameter</th><th>Kategorie</th><th>Datum</th><th>Wert</th><th>Einheit</th><th>Labor</th><th>Status</th></tr></thead>
+    <thead><tr><th>Parameter</th><th>Kategorie</th><th>Datum</th><th>Wert</th><th>Einheit</th><th>Wert SI</th><th>Einheit SI</th><th>Labor</th><th>Status</th></tr></thead>
     <tbody>`;
   for (const row of data) {
     const p = row.parameters;
     const val = row.value;
+    const valSi = row.value_si;
     const display = row.value_text || (val !== null ? val : '—');
-    const [cls, label] = statusLabel(val, p.ref_range_low, p.ref_range_high);
+    const displaySi = valSi !== null && valSi !== undefined ? valSi : '—';
+    const unitOrig = row.unit || p.unit || '—';
+    const unitSi = p.unit_si || '—';
+    const [cls, label] = statusLabel(valSi ?? val, p.ref_range_low_si ?? p.ref_range_low, p.ref_range_high_si ?? p.ref_range_high);
     const date = new Date(row.measured_at).toLocaleDateString('de-DE', { day:'2-digit', month:'short', year:'numeric' });
     html += `<tr>
       <td><strong>${p.name}</strong></td>
       <td>${p.category || '—'}</td>
       <td>${date}</td>
       <td>${display}</td>
-      <td>${p.unit || '—'}</td>
+      <td>${unitOrig}</td>
+      <td>${displaySi}</td>
+      <td>${unitSi}</td>
       <td>${row.lab || '—'}</td>
       <td><span class="range ${cls}">${label}</span></td>
     </tr>`;
