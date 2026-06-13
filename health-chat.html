@@ -6,31 +6,46 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
-  header { background: #1a1a2e; color: white; padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-  header h1 { font-size: 1.4rem; font-weight: 600; }
-  nav a { color: #7ec8e3; font-size: 0.85rem; text-decoration: none; margin-left: 20px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  header { background: #1a1a2e; color: white; padding: 0 24px; height: 56px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 100; }
+  header h1 { font-size: 1.2rem; font-weight: 600; }
+  nav a { color: #7ec8e3; font-size: 0.82rem; text-decoration: none; margin-left: 16px; }
   nav a:hover { text-decoration: underline; }
-  .logout-btn { color: #7ec8e3; font-size: 0.85rem; background: none; border: none; cursor: pointer; margin-left: 20px; padding: 0; }
+  .logout-btn { color: #7ec8e3; font-size: 0.82rem; background: none; border: none; cursor: pointer; margin-left: 16px; padding: 0; }
   .logout-btn:hover { text-decoration: underline; }
 
-  .container { max-width: 800px; margin: 0 auto; padding: 24px; height: calc(100vh - 70px); display: flex; flex-direction: column; gap: 16px; }
+  .main { display: flex; flex: 1; overflow: hidden; }
 
-  .context-bar { background: white; border-radius: 10px; padding: 12px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; font-size: 0.82rem; color: #888; flex-shrink: 0; }
-  .context-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  /* Sidebar */
+  .sidebar { width: 260px; background: #111827; color: #e5e7eb; display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid #1f2937; }
+  .sidebar-header { padding: 14px 12px; border-bottom: 1px solid #1f2937; }
+  .new-chat-btn { width: 100%; background: #1f2937; color: #e5e7eb; border: 1px solid #374151; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; transition: background 0.15s; }
+  .new-chat-btn:hover { background: #374151; }
+  .sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .sidebar-group-label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 14px 4px; }
+  .session-item { padding: 9px 14px; cursor: pointer; border-radius: 6px; margin: 1px 6px; font-size: 0.84rem; color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.12s; }
+  .session-item:hover { background: #1f2937; }
+  .session-item.active { background: #1f2937; color: white; }
+  .session-item .session-date { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
+
+  /* Chat area */
+  .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .context-bar { background: white; border-bottom: 1px solid #e5e7eb; padding: 8px 20px; display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #888; flex-shrink: 0; }
+  .context-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
   .context-dot.loaded { background: #2e7d32; }
-  .context-text { flex: 1; }
-  .context-reload { background: none; border: 1px solid #e0e0e0; border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; cursor: pointer; color: #666; }
+  .context-reload { background: none; border: 1px solid #e0e0e0; border-radius: 5px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer; color: #666; }
   .context-reload:hover { background: #f5f5f5; }
 
-  .messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
+  .messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 20px; }
 
   .msg { display: flex; gap: 12px; align-items: flex-start; }
   .msg.user { flex-direction: row-reverse; }
-  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
   .avatar.ai { background: #1a1a2e; color: white; }
   .avatar.user { background: #fc4c02; color: white; }
-  .bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 0.92rem; line-height: 1.6; }
+  .bubble { max-width: 80%; padding: 11px 15px; border-radius: 12px; font-size: 0.91rem; line-height: 1.6; }
   .msg.ai .bubble { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 4px 12px 12px 12px; }
   .msg.user .bubble { background: #1a1a2e; color: white; border-radius: 12px 4px 12px 12px; }
   .bubble p { margin-bottom: 8px; }
@@ -39,25 +54,28 @@
   .bubble li { margin-bottom: 4px; }
   .bubble strong { font-weight: 700; }
 
-  .typing { display: flex; gap: 4px; align-items: center; padding: 12px 16px; }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 11px 15px; }
   .typing span { width: 7px; height: 7px; border-radius: 50%; background: #ccc; animation: bounce 1.2s infinite; }
   .typing span:nth-child(2) { animation-delay: 0.2s; }
   .typing span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
-  .suggestions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
-  .suggest-btn { background: white; border: 1px solid #e0e0e0; border-radius: 20px; padding: 7px 14px; font-size: 0.82rem; cursor: pointer; color: #555; transition: all 0.15s; }
-  .suggest-btn:hover { border-color: #1a1a2e; color: #1a1a2e; }
+  .welcome { text-align: center; padding: 60px 20px; color: #aaa; margin: auto; }
+  .welcome h2 { font-size: 1.1rem; color: #555; margin-bottom: 8px; }
 
-  .input-row { display: flex; gap: 10px; flex-shrink: 0; }
-  textarea { flex: 1; border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px 16px; font-size: 0.95rem; font-family: inherit; resize: none; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.06); min-height: 52px; max-height: 140px; line-height: 1.5; }
+  .bottom-area { flex-shrink: 0; background: #f5f5f5; border-top: 1px solid #e5e7eb; padding: 12px 20px; }
+  .suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .suggest-btn { background: white; border: 1px solid #e0e0e0; border-radius: 20px; padding: 6px 13px; font-size: 0.8rem; cursor: pointer; color: #555; transition: all 0.15s; }
+  .suggest-btn:hover { border-color: #1a1a2e; color: #1a1a2e; }
+  .input-row { display: flex; gap: 10px; }
+  textarea { flex: 1; border: 1px solid #e0e0e0; border-radius: 10px; padding: 11px 15px; font-size: 0.93rem; font-family: inherit; resize: none; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.06); min-height: 48px; max-height: 140px; line-height: 1.5; }
   textarea:focus { outline: none; border-color: #1a1a2e; }
-  .send-btn { background: #1a1a2e; color: white; border: none; border-radius: 10px; padding: 12px 20px; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
+  .send-btn { background: #1a1a2e; color: white; border: none; border-radius: 10px; padding: 11px 18px; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
   .send-btn:hover { background: #2d2d4e; }
   .send-btn:disabled { opacity: 0.4; cursor: default; }
 
-  .welcome { text-align: center; padding: 40px 20px; color: #aaa; }
-  .welcome h2 { font-size: 1.1rem; color: #555; margin-bottom: 8px; }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -75,32 +93,48 @@
   </nav>
 </header>
 
-<div class="container">
-  <div class="context-bar">
-    <div class="context-dot" id="ctxDot"></div>
-    <div class="context-text" id="ctxText">Lade Gesundheitsdaten...</div>
-    <button class="context-reload" onclick="loadContext()">Neu laden</button>
-  </div>
-
-  <div class="messages" id="messages">
-    <div class="welcome">
-      <h2>Dein persönlicher Gesundheitsberater</h2>
-      <p>Ich habe Zugriff auf deine Blutwerte und Aktivitäten.<br>Stell mir eine Frage über deine Gesundheit.</p>
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button class="new-chat-btn" onclick="newChat()">
+        <span style="font-size:1.1rem">+</span> Neuer Chat
+      </button>
+    </div>
+    <div class="sidebar-list" id="sessionList">
+      <div style="padding:20px 14px;font-size:0.8rem;color:#6b7280">Lade Gespräche...</div>
     </div>
   </div>
 
-  <div class="suggestions" id="suggestions">
-    <button class="suggest-btn" onclick="ask('Wie sind meine aktuellen Blutwerte insgesamt zu bewerten?')">Blutwerte bewerten</button>
-    <button class="suggest-btn" onclick="ask('Welche Werte liegen außerhalb des Referenzbereichs?')">Auffällige Werte</button>
-    <button class="suggest-btn" onclick="ask('Wie war mein Training in den letzten 30 Tagen?')">Training analysieren</button>
-    <button class="suggest-btn" onclick="ask('Was sollte ich bei meinen aktuellen Werten supplementieren?')">Supplement-Tipps</button>
-  </div>
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="context-bar">
+      <div class="context-dot" id="ctxDot"></div>
+      <div class="context-text" id="ctxText">Lade Gesundheitsdaten...</div>
+      <button class="context-reload" onclick="loadContext()">Neu laden</button>
+    </div>
 
-  <div class="input-row">
-    <textarea id="input" placeholder="Stelle eine Frage zu deiner Gesundheit..." rows="1"
-      onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage()}"
-      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-    <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+    <div class="messages" id="messages">
+      <div class="welcome">
+        <h2>Dein persönlicher Gesundheitsberater</h2>
+        <p>Ich habe Zugriff auf deine Blutwerte und Aktivitäten.<br>Stell mir eine Frage oder wähle ein Gespräch links.</p>
+      </div>
+    </div>
+
+    <div class="bottom-area">
+      <div class="suggestions" id="suggestions">
+        <button class="suggest-btn" onclick="ask('Wie sind meine aktuellen Blutwerte insgesamt zu bewerten?')">Blutwerte bewerten</button>
+        <button class="suggest-btn" onclick="ask('Welche Werte liegen außerhalb des Referenzbereichs?')">Auffällige Werte</button>
+        <button class="suggest-btn" onclick="ask('Wie war mein Training in den letzten 30 Tagen?')">Training analysieren</button>
+        <button class="suggest-btn" onclick="ask('Was sollte ich bei meinen aktuellen Werten supplementieren?')">Supplement-Tipps</button>
+      </div>
+      <div class="input-row">
+        <textarea id="input" placeholder="Stelle eine Frage zu deiner Gesundheit..." rows="1"
+          onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage()}"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -113,34 +147,138 @@ const db = supabase.createClient(SUPABASE_URL, ANON_KEY);
 let contextData = '';
 let messages = [];
 let userName = '';
-
+let userId = '';
+let sessionId = crypto.randomUUID();
 let userAccessToken = ANON_KEY;
+let authDb = null;
 
 db.auth.getSession().then(({ data }) => {
-  if (!data.session) window.location.href = 'health-login.html';
-  else {
-    userAccessToken = data.session.access_token;
-    userName = data.session.user.email.split('@')[0];
-    loadContext();
-  }
+  if (!data.session) { window.location.href = 'health-login.html'; return; }
+  userAccessToken = data.session.access_token;
+  userName = data.session.user.email.split('@')[0];
+  userId = data.session.user.id || userName;
+  authDb = supabase.createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: 'Bearer ' + userAccessToken } }
+  });
+  loadContext();
+  loadSessions();
 });
 
 async function logout() { await db.auth.signOut(); window.location.href = 'health-login.html'; }
 
+// ── Session-Liste laden ──────────────────────────────────────────
+async function loadSessions() {
+  const { data } = await authDb
+    .from('chat_messages')
+    .select('session_id, content, created_at, role')
+    .eq('user_id', userId)
+    .eq('role', 'user')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (!data) return;
+
+  // Eine Zeile pro Session: erste User-Nachricht als Titel
+  const seen = new Map();
+  for (const m of data) {
+    if (!seen.has(m.session_id)) seen.set(m.session_id, m);
+  }
+  const sessions = [...seen.values()];
+
+  const list = document.getElementById('sessionList');
+  list.innerHTML = '';
+
+  if (sessions.length === 0) {
+    list.innerHTML = '<div style="padding:14px;font-size:0.8rem;color:#6b7280">Noch keine Gespräche</div>';
+    return;
+  }
+
+  // Gruppen: Heute / Diese Woche / Früher
+  const now = new Date();
+  const groups = { heute: [], woche: [], frueher: [] };
+  for (const s of sessions) {
+    const d = new Date(s.created_at);
+    const diffDays = (now - d) / 86400000;
+    if (diffDays < 1) groups.heute.push(s);
+    else if (diffDays < 7) groups.woche.push(s);
+    else groups.frueher.push(s);
+  }
+
+  function renderGroup(label, items) {
+    if (!items.length) return;
+    const gl = document.createElement('div');
+    gl.className = 'sidebar-group-label';
+    gl.textContent = label;
+    list.appendChild(gl);
+    for (const s of items) {
+      const item = document.createElement('div');
+      item.className = 'session-item' + (s.session_id === sessionId ? ' active' : '');
+      item.dataset.sid = s.session_id;
+      const title = s.content.length > 38 ? s.content.slice(0, 38) + '…' : s.content;
+      const dateStr = new Date(s.created_at).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+      item.innerHTML = `<div>${title}</div><div class="session-date">${dateStr}</div>`;
+      item.onclick = () => loadSession(s.session_id, item);
+      list.appendChild(item);
+    }
+  }
+
+  renderGroup('Heute', groups.heute);
+  renderGroup('Diese Woche', groups.woche);
+  renderGroup('Früher', groups.frueher);
+}
+
+// ── Session laden ────────────────────────────────────────────────
+async function loadSession(sid, itemEl) {
+  sessionId = sid;
+  messages = [];
+
+  document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+  if (itemEl) itemEl.classList.add('active');
+
+  document.getElementById('suggestions').style.display = 'none';
+  const div = document.getElementById('messages');
+  div.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-size:0.85rem">Lade Gespräch...</div>';
+
+  const { data } = await authDb
+    .from('chat_messages')
+    .select('role, content, created_at')
+    .eq('user_id', userId)
+    .eq('session_id', sid)
+    .order('created_at', { ascending: true });
+
+  div.innerHTML = '';
+  for (const m of (data || [])) {
+    const role = m.role === 'user' ? 'user' : 'ai';
+    addMessage(role, m.content);
+    messages.push({ role: m.role, content: m.content });
+  }
+  div.scrollTop = div.scrollHeight;
+}
+
+// ── Neuer Chat ───────────────────────────────────────────────────
+function newChat() {
+  sessionId = crypto.randomUUID();
+  messages = [];
+  document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+  const div = document.getElementById('messages');
+  div.innerHTML = `<div class="welcome">
+    <h2>Neues Gespräch</h2>
+    <p>Stell mir eine Frage zu deiner Gesundheit.</p>
+  </div>`;
+  document.getElementById('suggestions').style.display = 'flex';
+  document.getElementById('input').focus();
+}
+
+// ── Kontext laden ────────────────────────────────────────────────
 async function loadContext() {
   document.getElementById('ctxDot').className = 'context-dot';
   document.getElementById('ctxText').textContent = 'Lade Gesundheitsdaten...';
-
-  const authDb = supabase.createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: 'Bearer ' + userAccessToken } }
-  });
 
   const [measRes, actRes] = await Promise.all([
     authDb.from('measurements').select('measured_at,value,value_text,parameters(name,category,unit,ref_range_low,ref_range_high)').order('measured_at', { ascending: false }).limit(200),
     authDb.from('activities').select('date,type,duration_sec,distance_m,avg_heartrate,calories').order('date', { ascending: false }).limit(50),
   ]);
 
-  // Letzter Wert pro Parameter
   const latest = {};
   for (const m of (measRes.data || [])) {
     const name = m.parameters?.name;
@@ -167,12 +305,11 @@ async function loadContext() {
 
   contextData = `BLUTWERTE (neuester Wert pro Parameter):\n${measLines.join('\n')}\n\nAKTIVITÄTEN (letzte 20):\n${actLines.join('\n')}`;
 
-  const paramCount = Object.keys(latest).length;
-  const actCount = actRes.data?.length || 0;
   document.getElementById('ctxDot').className = 'context-dot loaded';
-  document.getElementById('ctxText').textContent = `${paramCount} Parameter + ${actCount} Aktivitäten geladen`;
+  document.getElementById('ctxText').textContent = `${Object.keys(latest).length} Parameter + ${actRes.data?.length || 0} Aktivitäten geladen`;
 }
 
+// ── Nachricht senden ─────────────────────────────────────────────
 function ask(text) {
   document.getElementById('input').value = text;
   sendMessage();
@@ -180,8 +317,6 @@ function ask(text) {
 
 function addMessage(role, content) {
   const div = document.getElementById('messages');
-
-  // Remove welcome message
   const welcome = div.querySelector('.welcome');
   if (welcome) welcome.remove();
 
@@ -196,7 +331,6 @@ function addMessage(role, content) {
   bubble.className = 'bubble';
 
   if (role === 'ai') {
-    // Simple markdown: **bold**, newlines
     bubble.innerHTML = content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n\n/g, '</p><p>')
@@ -235,20 +369,24 @@ async function sendMessage() {
 
   addMessage('user', text);
   messages.push({ role: 'user', content: text });
-
   showTyping();
+
+  const isFirstMsg = messages.filter(m => m.role === 'user').length === 1;
 
   try {
     const resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, context: contextData }),
+      body: JSON.stringify({ messages, context: contextData, userId, sessionId }),
     });
     const data = await resp.json();
     document.getElementById('typing')?.remove();
     const reply = data.content?.[0]?.text || data.error || 'Keine Antwort erhalten.';
     addMessage('ai', reply);
     messages.push({ role: 'assistant', content: reply });
+
+    // Sidebar aktualisieren nach erster Nachricht einer neuen Session
+    if (isFirstMsg) loadSessions();
   } catch (err) {
     document.getElementById('typing')?.remove();
     addMessage('ai', 'Fehler: ' + err.message);
