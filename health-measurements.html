@@ -39,15 +39,16 @@
 <header>
   <div>
     <h1>Messungen</h1>
-    <span id="lastUpdate">LÃ¤dt...</span>
+    <span id="lastUpdate">Lädt...</span>
   </div>
   <nav>
     <a href="health-dashboard.html">Dashboard</a>
+    <a href="health-measurements.html">Messungen</a>
     <a href="health-parameters.html">Parameter</a>
     <a href="health-trend.html">Trend</a>
     <a href="health-users.html">Users</a>
     <a href="health-strava.html">Strava</a>
-    <a href="health-activities.html">AktivitÃ¤ten</a>
+    <a href="health-activities.html">Aktivitäten</a>
     <a href="health-chat.html">KI Chat</a>
     <button class="logout-btn" onclick="logout()">Abmelden</button>
   </nav>
@@ -55,7 +56,7 @@
 
 <div class="container">
   <div class="toolbar">
-    <input id="tableFilter" type="text" placeholder="Filtern nach Parameter, Kategorie oder Laborâ€¦" oninput="applyFilter()">
+    <input id="tableFilter" type="text" placeholder="Filtern nach Parameter, Kategorie oder Labor…" oninput="applyFilter()">
     <span id="filterCount"></span>
   </div>
   <div id="content"><div class="loading">Daten werden geladen...</div></div>
@@ -81,7 +82,7 @@ async function logout() {
 }
 
 function statusLabel(val, low, high) {
-  if (val === null || val === undefined) return ['na', 'â€”'];
+  if (val === null || val === undefined) return ['na', '—'];
   if (low !== null && low !== undefined && val < low) return ['low', 'Zu niedrig'];
   if (high !== null && high !== undefined && val > high) return ['high', 'Zu hoch'];
   return ['ok', 'Im Bereich'];
@@ -97,7 +98,7 @@ async function loadData() {
     if (!Array.isArray(data)) throw new Error(JSON.stringify(data));
     allRows = data;
     renderTable();
-    document.getElementById('lastUpdate').textContent = `${data.length} Messungen Â· Stand: ${new Date().toLocaleDateString('de-DE')}`;
+    document.getElementById('lastUpdate').textContent = `${data.length} Messungen · Stand: ${new Date().toLocaleDateString('de-DE')}`;
   } catch(e) {
     document.getElementById('content').innerHTML = `<div class="error">Fehler beim Laden: ${e.message}</div>`;
   }
@@ -125,8 +126,8 @@ function renderTable() {
     return 0;
   });
 
-  const icons = { date: 'â†•', param: 'â†•', category: 'â†•', value: 'â†•', value_si: 'â†•', lab: 'â†•' };
-  icons[sortCol] = sortAsc ? 'â†‘' : 'â†“';
+  const icons = { date: '↕', param: '↕', category: '↕', value: '↕', value_si: '↕', lab: '↕' };
+  icons[sortCol] = sortAsc ? '↑' : '↓';
 
   let html = `<table>
     <thead><tr>
@@ -145,21 +146,21 @@ function renderTable() {
     const p = row.parameters;
     const val = row.value;
     const valSi = row.value_si;
-    const display = row.value_text || (val !== null && val !== undefined ? val : 'â€”');
-    const displaySi = valSi !== null && valSi !== undefined ? valSi : 'â€”';
-    const unitOrig = row.unit || p.unit || 'â€”';
-    const unitSi = p.unit_si || 'â€”';
+    const display = row.value_text || (val !== null && val !== undefined ? val : '—');
+    const displaySi = valSi !== null && valSi !== undefined ? valSi : '—';
+    const unitOrig = row.unit || p.unit || '—';
+    const unitSi = p.unit_si || '—';
     const [cls, label] = statusLabel(valSi ?? val, p.ref_range_low_si ?? p.ref_range_low, p.ref_range_high_si ?? p.ref_range_high);
     const date = new Date(row.measured_at).toLocaleDateString('de-DE', { day:'2-digit', month:'short', year:'numeric' });
     html += `<tr>
       <td><strong>${p.name}</strong></td>
-      <td>${p.category || 'â€”'}</td>
+      <td>${p.category || '—'}</td>
       <td>${date}</td>
       <td>${display}</td>
       <td>${unitOrig}</td>
       <td>${displaySi}</td>
       <td>${unitSi}</td>
-      <td>${row.lab || 'â€”'}</td>
+      <td>${row.lab || '—'}</td>
       <td><span class="${cls}">${label}</span></td>
     </tr>`;
   }
@@ -167,7 +168,7 @@ function renderTable() {
 
   document.getElementById('content').innerHTML = html;
   document.getElementById('filterCount').textContent =
-    rows.length === allRows.length ? `${allRows.length} EintrÃ¤ge` : `${rows.length} von ${allRows.length}`;
+    rows.length === allRows.length ? `${allRows.length} Einträge` : `${rows.length} von ${allRows.length}`;
 }
 
 function setSort(col) {
