@@ -105,13 +105,23 @@ function render(data) {
     byCategory[cat].push({ name, row });
   }
 
-  const cats = ['Vitamin', 'Mineralstoff', 'Aminosäurenprofil', 'Insulin', 'Homocystein', 'Hämoglobin', 'Eiweiss', 'Sonstige'];
+  const mainCats = ['Vitamin', 'Mineralstoff', 'Hämoglobin', 'Aminosäurenprofil', 'Stoffwechsel'];
   let html = '';
 
-  for (const cat of cats) {
-    if (!byCategory[cat]) continue;
-    html += `<div class="section-title">${cat}</div><div class="grid">`;
-    for (const { name, row } of byCategory[cat]) {
+  // Collect all categories not in mainCats into "Weitere"
+  const weitereItems = [];
+  for (const [cat, items] of Object.entries(byCategory)) {
+    if (!mainCats.includes(cat)) weitereItems.push(...items);
+  }
+
+  const catsToRender = [...mainCats, '__weitere__'];
+
+  for (const cat of catsToRender) {
+    const items = cat === '__weitere__' ? weitereItems : byCategory[cat];
+    if (!items || items.length === 0) continue;
+    const label = cat === '__weitere__' ? 'Weitere' : cat;
+    html += `<div class="section-title">${label}</div><div class="grid">`;
+    for (const { name, row } of items) {
       const p = row.parameters;
       const val = row.value;
       const valSi = row.value_si;
