@@ -438,7 +438,7 @@ async function sendMessage() {
     });
     const data = await resp.json();
     document.getElementById('typing')?.remove();
-    const reply = data.content?.[0]?.text || data.error || 'Keine Antwort erhalten.';
+    const reply = data.reply || data.content?.[0]?.text || data.error || 'Keine Antwort erhalten.';
     addMessage('ai', reply);
     messages.push({ role: 'assistant', content: reply });
 
