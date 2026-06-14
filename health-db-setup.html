@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Health DB – System Setup Übersicht</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; background: #f8f9fa; }
+  h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 12px; }
+  h2 { color: #2980b9; margin-top: 40px; border-left: 4px solid #3498db; padding-left: 12px; }
+  h3 { color: #555; margin-top: 24px; }
+  .card { background: white; border-radius: 10px; padding: 20px 28px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+  .box { background: #eaf4fb; border: 2px solid #3498db; border-radius: 8px; padding: 8px 16px; font-weight: 600; font-size: 0.95em; }
+  .box.green { background: #eafaf1; border-color: #27ae60; }
+  .box.orange { background: #fef9e7; border-color: #f39c12; }
+  .box.red { background: #fdedec; border-color: #e74c3c; }
+  .box.gray { background: #f2f3f4; border-color: #95a5a6; }
+  .box.purple { background: #f5eef8; border-color: #8e44ad; }
+  .arrow { font-size: 1.4em; color: #7f8c8d; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th { background: #2980b9; color: white; padding: 10px 14px; text-align: left; }
+  td { padding: 9px 14px; border-bottom: 1px solid #ecf0f1; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7fbfe; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+  .key-box { background: #fef9e7; border: 1px solid #f39c12; border-radius: 6px; padding: 12px 16px; margin: 10px 0; font-family: monospace; font-size: 0.85em; word-break: break-all; }
+  .note { background: #eafaf1; border-left: 4px solid #27ae60; padding: 10px 14px; margin: 10px 0; border-radius: 0 6px 6px 0; font-size: 0.9em; }
+  .warning { background: #fdedec; border-left: 4px solid #e74c3c; padding: 10px 14px; margin: 10px 0; border-radius: 0 6px 6px 0; font-size: 0.9em; }
+  ul li { margin: 6px 0; }
+  .badge { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+  .badge.new { background: #e3f2fd; color: #1565c0; }
+  .badge.updated { background: #fff3e0; color: #e65100; }
+</style>
+</head>
+<body>
+
+<h1>Health DB – System Setup Übersicht</h1>
+<p style="color:#666; margin-top:-10px;">Stand: Juni 2026 &nbsp;|&nbsp; Stefan Schaab</p>
+
+<!-- ====== DIENSTE ====== -->
+<h2>1. Beteiligte Web-Dienste</h2>
+<div class="card">
+  <table>
+    <tr><th>Dienst</th><th>Zweck</th><th>URL / Login</th></tr>
+    <tr><td><strong>GitHub Pages</strong></td><td>Frontend-Hosting (kostenlos, öffentlich)</td><td>stschaab.github.io/health-db</td></tr>
+    <tr><td><strong>Supabase</strong></td><td>PostgreSQL-Datenbank + REST API + pgvector</td><td>supabase.com → Projekt "Health Data"<br>ID: <code>thgawuqcogugzurrijkp</code></td></tr>
+    <tr><td><strong>Cloudflare Workers</strong></td><td>API-Proxy (versteckt Claude API Key)</td><td>dash.cloudflare.com → Worker <code>health-db-ai</code></td></tr>
+    <tr><td><strong>Anthropic</strong></td><td>Claude API (KI-Chat + Embeddings)</td><td>console.anthropic.com</td></tr>
+    <tr><td><strong>Voyage AI</strong></td><td>Embedding-Modell für Vektordatenbank</td><td>voyageai.com → Key im Cloudflare Worker Secret</td></tr>
+    <tr><td><strong>Google Drive</strong></td><td>Rohdaten: Labor-PDFs, Scans</td><td>G:\Meine Ablage\Stefan Gesundheit\Labor Befunde\</td></tr>
+    <tr><td><strong>Strava</strong></td><td>Fitness-Aktivitäten (importiert ✓)</td><td>strava.com / developers.strava.com</td></tr>
+    <tr><td><strong>GitHub</strong></td><td>Code-Hosting, Token für Push</td><td>github.com/stschaab/health-db · Token läuft ab: 2026-07-13</td></tr>
+  </table>
+</div>
+
+<!-- ====== LOGIN-KETTEN ====== -->
+<h2>2. Login-Ketten</h2>
+<div class="card">
+  <h3>GitHub / Supabase / Cloudflare</h3>
+  <div class="flow">
+    <div class="box gray">Du</div><div class="arrow">→</div>
+    <div class="box">"Sign in with Google"</div><div class="arrow">→</div>
+    <div class="box green">Google Account<br>(st.schaab@gmail.com)</div>
+  </div>
+  <p>Alle drei Dienste nutzen Google als Basis (direkt oder via GitHub). Kette: <strong>Supabase → GitHub → Google</strong>.</p>
+
+  <h3>App-Login (Endnutzer)</h3>
+  <div class="flow">
+    <div class="box gray">health-login.html</div><div class="arrow">→</div>
+    <div class="box orange">Supabase Auth<br>(E-Mail + Passwort)</div><div class="arrow">→</div>
+    <div class="box green">JWT Token im Browser</div>
+  </div>
+  <p>Die App hat eigene Nutzerkonten in Supabase. Eingeloggte User sehen nur ihre eigenen Daten (Row Level Security).</p>
+
+  <h3>GitHub Push (Deployment)</h3>
+  <div class="flow">
+    <div class="box gray">PowerShell / Claude Code</div><div class="arrow">→</div>
+    <div class="box">GitHub API<br>+ Personal Access Token</div><div class="arrow">→</div>
+    <div class="box green">github.com/stschaab/health-db</div>
+  </div>
+  <p>Token ist als Windows-Umgebungsvariable gespeichert: <code>$env:GITHUB_TOKEN</code> → läuft ab 2026-07-13.</p>
+</div>
+
+<!-- ====== ARCHITEKTUR ====== -->
+<h2>3. Gesamtarchitektur</h2>
+<div class="card">
+  <div class="flow" style="justify-content:center; font-size:1.0em; flex-wrap:wrap; gap:12px;">
+    <div style="text-align:center">
+      <div class="box gray" style="margin-bottom:4px">Browser (Du)</div>
+      <div style="font-size:0.8em;color:#888">HTML-Dateien</div>
+    </div>
+    <div class="arrow">↕ REST</div>
+    <div style="text-align:center">
+      <div class="box orange" style="margin-bottom:4px">Supabase</div>
+      <div style="font-size:0.8em;color:#888">PostgreSQL + pgvector</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div class="arrow">↕ Chat-Anfragen</div>
+    </div>
+    <div style="text-align:center">
+      <div class="box purple" style="margin-bottom:4px">Cloudflare Worker</div>
+      <div style="font-size:0.8em;color:#888">health-db-ai</div>
+    </div>
+    <div class="arrow">↕ API</div>
+    <div style="text-align:center">
+      <div class="box green" style="margin-bottom:4px">Anthropic + Voyage AI</div>
+      <div style="font-size:0.8em;color:#888">Claude + Embeddings</div>
+    </div>
+  </div>
+  <br>
+  <div class="note">Die HTML-Dateien haben <strong>keinen eigenen Server</strong>. Sie sprechen direkt über REST mit Supabase. Der Cloudflare Worker ist nur für KI-Chat nötig (versteckt den API-Key).</div>
+</div>
+
+<!-- ====== DATENBANK ====== -->
+<h2>4. Datenbank-Struktur</h2>
+<div class="card">
+  <table>
+    <tr><th>Tabelle</th><th>Was drin steht</th><th>Wichtige Spalten</th></tr>
+    <tr>
+      <td><strong>parameters</strong></td>
+      <td>Definition aller Laborwerte<br>(69 Parameter)</td>
+      <td><code>id, name, category, unit, unit_si, ref_range_low, ref_range_high, ref_range_low_si, ref_range_high_si, ref_note</code></td>
+    </tr>
+    <tr>
+      <td><strong>measurements</strong></td>
+      <td>Einzelne Messwerte (91 Einträge)</td>
+      <td><code>id, parameter_id, measured_at, value, unit, value_si, value_text, lab, notes</code></td>
+    </tr>
+    <tr>
+      <td><strong>activities</strong></td>
+      <td>Strava Fitness-Aktivitäten</td>
+      <td><code>strava_id, type, date, duration_sec, distance_m, avg_heartrate, calories</code></td>
+    </tr>
+    <tr>
+      <td><strong>chat_messages</strong> <span class="badge new">neu</span></td>
+      <td>KI-Chat Nachrichten + Vektoren<br>(52 Nachrichten, 44 mit Embedding)</td>
+      <td><code>id, session_id, user_id, role, content, embedding (vector 1024), created_at</code></td>
+    </tr>
+    <tr>
+      <td><strong>chat_sessions</strong> <span class="badge new">neu</span></td>
+      <td>Chat-Session Titel (editierbar)</td>
+      <td><code>session_id, user_id, title, created_at, updated_at</code></td>
+    </tr>
+    <tr>
+      <td><strong>users</strong></td>
+      <td>Nutzerkonten (Supabase Auth)</td>
+      <td>verwaltet durch Supabase Auth</td>
+    </tr>
+  </table>
+
+  <h3>SI-Einheiten Konzept <span class="badge updated">wichtig</span></h3>
+  <p>Originalwerte bleiben immer erhalten. Zusätzlich gibt es umgerechnete SI-Werte:</p>
+  <table>
+    <tr><th>Spalte</th><th>Wo</th><th>Bedeutung</th></tr>
+    <tr><td><code>measurements.unit</code></td><td>measurements</td><td>Originale Einheit dieser Messung (z.B. mg/l bei russischem Labor)</td></tr>
+    <tr><td><code>measurements.value_si</code></td><td>measurements</td><td>Wert umgerechnet in internationale Einheit</td></tr>
+    <tr><td><code>parameters.unit_si</code></td><td>parameters</td><td>Internationale Zieleinheit (z.B. mmol/l für Magnesium)</td></tr>
+    <tr><td><code>parameters.ref_range_low/high_si</code></td><td>parameters</td><td>Referenzbereich in SI-Einheit</td></tr>
+  </table>
+  <div class="note">Beispiel Magnesium: Russland misst in mg/l (20.98 mg/l = 0.863 mmol/l), Deutschland in mmol/l (0.93 mmol/l). Die App zeigt immer mmol/l im Dashboard und Trend.</div>
+
+  <h3>Row Level Security (RLS)</h3>
+  <p>Alle Tabellen haben RLS aktiviert. Jeder User sieht nur seine eigenen Daten (<code>user_id = auth.uid()</code>). Policies für <code>anon</code> und <code>authenticated</code> Rolle.</p>
+</div>
+
+<!-- ====== FRONTEND ====== -->
+<h2>5. Frontend-Dateien</h2>
+<div class="card">
+  <p>Alle Dateien liegen lokal unter <code>C:\Users\Stefan\Downloads\</code> und sind auf <strong>GitHub Pages</strong> gehostet unter <code>stschaab.github.io/health-db/</code>.</p>
+  <table>
+    <tr><th>Datei</th><th>Funktion</th><th></th></tr>
+    <tr><td><code>health-dashboard.html</code></td><td>Kacheln: letzter Messwert pro Parameter, nach Kategorie gruppiert, SI-Werte</td><td><span class="badge updated">aktualisiert</span></td></tr>
+    <tr><td><code>health-measurements.html</code></td><td>Alle Messungen als Tabelle, filterbar + sortierbar, 4 Wertspalten (Orig + SI)</td><td><span class="badge new">neu</span></td></tr>
+    <tr><td><code>health-parameters.html</code></td><td>Editor: Referenzbereiche direkt bearbeiten, mit Suchfilter</td><td><span class="badge updated">aktualisiert</span></td></tr>
+    <tr><td><code>health-trend.html</code></td><td>Zeitverlauf-Diagramm (Chart.js), zeigt SI-Werte mit SI-Referenzlinien</td><td><span class="badge updated">aktualisiert</span></td></tr>
+    <tr><td><code>health-chat.html</code></td><td>KI-Chat mit Gedächtnis, Sidebar mit Session-History, umbennenbarer Titel</td><td><span class="badge updated">aktualisiert</span></td></tr>
+    <tr><td><code>health-activities.html</code></td><td>Strava Aktivitäten-Übersicht</td><td></td></tr>
+    <tr><td><code>health-strava.html</code></td><td>Strava OAuth + Import</td><td></td></tr>
+    <tr><td><code>health-users.html</code></td><td>Nutzerverwaltung (Admin)</td><td></td></tr>
+    <tr><td><code>health-login.html</code></td><td>Login mit Supabase Auth</td><td></td></tr>
+    <tr><td><code>health-db-setup.html</code></td><td>Diese Dokumentation</td><td></td></tr>
+  </table>
+  <div class="note">Navigation ist auf allen Seiten identisch: Dashboard · Messungen · Parameter · Trend · Strava · Aktivitäten · KI Chat · Users · Abmelden</div>
+</div>
+
+<!-- ====== KI CHAT ====== -->
+<h2>6. KI-Chat System</h2>
+<div class="card">
+  <h3>Datenfluss einer Chat-Anfrage</h3>
+  <div class="flow" style="flex-direction:column; align-items:flex-start; gap:8px;">
+    <div class="flow"><div class="box gray">health-chat.html lädt Kontext</div><div class="arrow">→</div><div class="box orange">Supabase: alle Messwerte (2000 limit)</div></div>
+    <div class="flow"><div class="box gray">User schreibt Frage</div><div class="arrow">→</div><div class="box purple">Cloudflare Worker (health-db-ai)</div></div>
+    <div class="flow"><div class="box purple">Worker fügt hinzu:</div><div class="arrow">→</div><div class="box">System-Prompt + Kontext + ähnliche frühere Nachrichten</div></div>
+    <div class="flow"><div class="box purple">Worker ruft auf:</div><div class="arrow">→</div><div class="box green">Claude API (claude-sonnet-4-5)</div></div>
+    <div class="flow"><div class="box green">Antwort zurück</div><div class="arrow">+</div><div class="box orange">Speichern in chat_messages (ctx.waitUntil)</div></div>
+    <div class="flow"><div class="box orange">Voyage AI voyage-3</div><div class="arrow">→</div><div class="box">Embedding (1024 Zahlen) für Frage + Antwort</div></div>
+  </div>
+
+  <h3>Gedächtnis-System (pgvector)</h3>
+  <table>
+    <tr><th>Komponente</th><th>Detail</th></tr>
+    <tr><td>Embedding-Modell</td><td>Voyage AI <code>voyage-3</code>, 1024 Dimensionen</td></tr>
+    <tr><td>Speicherort</td><td>Supabase <code>chat_messages.embedding</code> (vector Typ)</td></tr>
+    <tr><td>Suche</td><td>Cosine Similarity — bei jeder neuen Frage werden die 5 ähnlichsten früheren Nachrichten geladen</td></tr>
+    <tr><td>Stand</td><td>52 Nachrichten gesamt, 44 mit Embedding</td></tr>
+    <tr><td>Session-Titel</td><td>Editierbar per Doppelklick, gespeichert in <code>chat_sessions</code> Tabelle</td></tr>
+  </table>
+
+  <h3>Cloudflare Worker: health-db-ai</h3>
+  <table>
+    <tr><th>Eigenschaft</th><th>Wert</th></tr>
+    <tr><td>URL</td><td><code>https://health-db-ai.st-schaab.workers.dev</code></td></tr>
+    <tr><td>Secrets</td><td><code>ANTHROPIC_API_KEY</code>, <code>VOYAGE_API_KEY</code>, <code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_KEY</code></td></tr>
+    <tr><td>Wichtige Technik</td><td><code>ctx.waitUntil(saveAll())</code> — hält Worker am Leben nach Response um DB-Speicherung abzuschliessen</td></tr>
+    <tr><td>Modell</td><td>claude-sonnet-4-5 (Haiku für Titel-Generierung)</td></tr>
+  </table>
+</div>
+
+<!-- ====== KEYS ====== -->
+<h2>7. Keys & Credentials</h2>
+<div class="card">
+  <table>
+    <tr><th>Key</th><th>Woher</th><th>Wo gespeichert / benutzt</th></tr>
+    <tr>
+      <td><strong>Supabase URL</strong><br><code>https://thgawuqcogugzurrijkp.supabase.co</code></td>
+      <td>Supabase → Settings → API</td>
+      <td>In allen HTML-Dateien (kein Geheimnis)</td>
+    </tr>
+    <tr>
+      <td><strong>Supabase Anon Key</strong> (JWT)</td>
+      <td>Supabase → Settings → API → "anon public"</td>
+      <td>In allen HTML-Dateien — öffentlich, nur RLS schützt die Daten</td>
+    </tr>
+    <tr>
+      <td><strong>Supabase Service Role Key</strong></td>
+      <td>Supabase → Settings → API → "service_role"</td>
+      <td>Nur im Cloudflare Worker Secret — niemals im Frontend!</td>
+    </tr>
+    <tr>
+      <td><strong>GitHub Personal Access Token</strong></td>
+      <td>github.com → Settings → Developer Settings → Tokens</td>
+      <td>Windows-Umgebungsvariable <code>GITHUB_TOKEN</code> · läuft ab 2026-07-13</td>
+    </tr>
+    <tr>
+      <td><strong>Claude API Key</strong></td>
+      <td>console.anthropic.com</td>
+      <td>Cloudflare Worker Secret <code>ANTHROPIC_API_KEY</code></td>
+    </tr>
+    <tr>
+      <td><strong>Voyage AI API Key</strong></td>
+      <td>voyageai.com</td>
+      <td>Cloudflare Worker Secret <code>VOYAGE_API_KEY</code></td>
+    </tr>
+    <tr>
+      <td><strong>Strava Client ID: 257620</strong></td>
+      <td>strava.com → Settings → API Application</td>
+      <td>Im OAuth-Flow (URL-Parameter)</td>
+    </tr>
+  </table>
+  <div class="warning">⚠️ <strong>Service Role Key, Claude API Key, Voyage AI Key</strong> niemals in HTML oder GitHub! Diese geben vollen Zugriff auf DB und API.</div>
+</div>
+
+<!-- ====== DATENQUELLEN ====== -->
+<h2>8. Datenquellen (Labor-Befunde)</h2>
+<div class="card">
+  <p>PDFs liegen in <code>G:\Meine Ablage\Stefan Gesundheit\Labor Befunde\</code></p>
+  <table>
+    <tr><th>Labor / Quelle</th><th>Datum</th><th>Was</th><th>In DB?</th></tr>
+    <tr><td><strong>SYNLAB (Dr. Ruppert, Erlangen)</strong></td><td>Dez 2024</td><td>Großes Blutbild, Vitamine, Mineralien</td><td>✓</td></tr>
+    <tr><td><strong>SYNLAB (Dr. Ruppert, Erlangen)</strong></td><td>17.12.2025</td><td>Vollständiges Blutbild (91 Werte), inkl. LDL⚠, Differentialblutbild, Elektrolyte</td><td>✓</td></tr>
+    <tr><td><strong>ГЕМОТЕСТ (Russland)</strong></td><td>Apr 2025</td><td>Aminosäurenprofil, Mineralien (inkl. Magnesium in mg/l)</td><td>✓</td></tr>
+    <tr><td><strong>Verisana</strong></td><td>Mrz 2025</td><td>Hormone</td><td>✓</td></tr>
+    <tr><td><strong>Cerascreen</strong></td><td>versch.</td><td>Ferritin, B12, Vitamin D (x3), Cortisol (x2), hsCRP</td><td>✓</td></tr>
+    <tr><td><strong>Strava</strong></td><td>laufend</td><td>Laufen, Radfahren, etc.</td><td>✓</td></tr>
+    <tr><td><strong>Blutdruck / Waage</strong></td><td>—</td><td>Tagesaktuelle Werte</td><td>— noch nicht</td></tr>
+  </table>
+
+  <h3>Workflow: Neue Laborwerte importieren</h3>
+  <div class="flow" style="flex-direction:column; align-items:flex-start; gap:6px;">
+    <div class="flow"><div class="box gray">PDF im Google Drive</div><div class="arrow">→</div><div class="box">Claude liest PDF (Read-Tool)</div></div>
+    <div class="flow"><div class="box">Werte + Einheiten extrahieren</div><div class="arrow">→</div><div class="box">Gegen parameters-Tabelle prüfen</div></div>
+    <div class="flow"><div class="box orange">Neue Parameter anlegen (POST)</div><div class="arrow">+</div><div class="box orange">Messwerte + unit + value_si eintragen</div><div class="arrow">→</div><div class="box green">Supabase</div></div>
+  </div>
+  <div class="note">Claude kann PDFs direkt lesen (bis ca. 10 Seiten), Werte extrahieren und via Supabase REST API eintragen — ohne manuelles Copy-Paste.</div>
+</div>
+
+<!-- ====== CLAUDE ALS WERKZEUG ====== -->
+<h2>9. Claude Code als Entwicklungswerkzeug</h2>
+<div class="card">
+  <table>
+    <tr><th>Was Claude tun kann</th><th>Wie</th></tr>
+    <tr><td>PDFs lesen (lokal oder Drive)</td><td>Read-Tool (bis ~10 Seiten)</td></tr>
+    <tr><td>Supabase Daten lesen/schreiben</td><td>REST API mit Anon Key oder Dashboard-API</td></tr>
+    <tr><td>Supabase Schema ändern (Tabellen, Policies)</td><td>Dashboard Management API via Browser-Tool</td></tr>
+    <tr><td>HTML-Dateien erstellen/bearbeiten</td><td>Direkt auf Dateisystem (Edit/Write-Tool)</td></tr>
+    <tr><td>Zu GitHub pushen</td><td>GitHub API + <code>GITHUB_TOKEN</code> aus Windows-Env</td></tr>
+    <tr><td>Dateien in Drive suchen/kopieren</td><td>Drive MCP (<code>search_files</code>, <code>copy_file</code>)</td></tr>
+    <tr><td>E-Mails durchsuchen</td><td>Gmail MCP</td></tr>
+    <tr><td>Browser steuern (Supabase UI)</td><td>Chrome MCP + JavaScript-Injection</td></tr>
+  </table>
+
+  <h3>MCP-Server (aktive Verbindungen)</h3>
+  <table>
+    <tr><th>MCP-Server</th><th>Zugriff auf</th></tr>
+    <tr><td>Google Drive MCP</td><td>Dateien suchen, lesen, kopieren</td></tr>
+    <tr><td>Gmail MCP</td><td>E-Mails suchen und lesen</td></tr>
+    <tr><td>Chrome MCP</td><td>Browser steuern (Supabase Dashboard, etc.)</td></tr>
+    <tr><td>Computer-Use MCP</td><td>Desktop-Screenshots und Steuerung</td></tr>
+    <tr><td>Calendar MCP</td><td>Google Kalender</td></tr>
+  </table>
+
+  <div class="note">Claude ist der "Kleber" zwischen den Diensten — er liest PDFs, prüft die DB, rechnet SI-Einheiten um und pflegt das Frontend, alles in einem Gespräch.</div>
+</div>
+
+<!-- ====== GEPLANT ====== -->
+<h2>10. Geplante Erweiterungen</h2>
+<div class="card">
+  <table>
+    <tr><th>Feature</th><th>Idee</th></tr>
+    <tr><td>PDF Auto-Import</td><td>PDFs aus Mail oder Scans automatisch parsen und in DB ablegen — Labor Befunde Ordner als Ziel etabliert</td></tr>
+    <tr><td>Blutdruck / Waage</td><td>Manuelle oder automatische Eingabe von Tagesmessungen</td></tr>
+    <tr><td>Ira Zugriff</td><td>Multi-User: shared_access Tabelle, Ira kann Stefans Daten lesen</td></tr>
+    <tr><td>Dashboard Kategorien</td><td>"Sonstige" Kategorie für kleine Gruppen (Insulin, Homocystein etc.) zusammenfassen</td></tr>
+  </table>
+</div>
+
+<hr style="margin-top:50px; border-color:#ddd;">
+<p style="color:#999; font-size:0.85em;">Aktualisiert mit Claude Code · Juni 2026</p>
+
+</body>
+</html>
