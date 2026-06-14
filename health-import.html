@@ -340,7 +340,7 @@ async function loadReports() {
     done:       '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-size:0.75rem">✓ Fertig</span>',
     processing: '<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:20px;font-size:0.75rem">⏳ Läuft</span>',
     error:      '<span style="background:#fdedec;color:#c62828;padding:2px 8px;border-radius:20px;font-size:0.75rem">✗ Fehler</span>',
-  }[s] || s;
+  }[s] || s);
 
   const typeOptions = { labor: 'Labor', arzt: 'Arztbericht', bildgebung: 'Bildgebung', gutachten: 'Gutachten', sonstiges: 'Sonstiges' };
   const typeLabel = t => typeOptions[t] || t || 'Labor';
